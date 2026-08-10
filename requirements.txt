@@ -1,0 +1,4 @@
+geopandas==1.1.4
+matplotlib==3.11.1
+pyogrio==0.13.0
+

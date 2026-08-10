@@ -1,0 +1,11 @@
+.venv/
+__pycache__/
+*.py[cod]
+.DS_Store
+
+# Official source files are downloaded reproducibly by the script.
+data/raw/
+
+# Keep lightweight previews in Git; regenerate publication formats locally.
+outputs/*.pdf
+outputs/*.svg
