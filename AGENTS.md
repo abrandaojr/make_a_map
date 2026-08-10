@@ -134,16 +134,16 @@ de cruzamentos e comparacoes historicas.
 
 ## Dimensoes obrigatorias
 
-Todos os mapas devem usar orientacao paisagem, proporcao `16:9` e dimensoes de
-`13.33 x 7.5` polegadas (largura x altura). Em Matplotlib, usar:
+Todos os mapas devem usar formato quadrado e dimensoes de `7.5 x 7.5`
+polegadas (largura x altura). Em Matplotlib, usar:
 
 ```python
-figsize = (13.33, 7.5)
+figsize = (7.5, 7.5)
 ```
 
 As versoes `pt-BR` e `en-US` devem manter exatamente as mesmas dimensoes. Na
 exportacao raster, a quantidade de pixels deve ser derivada dessas dimensoes e
 do DPI solicitado, sem redimensionamento posterior. Para publicacao, usar por
-padrao 300 DPI, resultando em aproximadamente `3999 x 2250` pixels; oferecer
+padrao 300 DPI, resultando em `2250 x 2250` pixels; oferecer
 600 DPI quando exigido pelo periodico. Exportacoes `PDF` e `SVG` devem preservar
 as dimensoes fisicas e os elementos vetoriais.

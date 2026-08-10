@@ -54,7 +54,7 @@ TEXT = {
         ),
         "label": "Amazônia Legal",
         "context": "Demais áreas do Brasil",
-        "area": "5,01 milhões de km²",
+        "area": "5,01 milhões\nde km²",
         "share": "58,9% do território nacional",
         "scale": "500 km",
         "source": (
@@ -70,7 +70,7 @@ TEXT = {
         ),
         "label": "Legal Amazon",
         "context": "Rest of Brazil",
-        "area": "5.01 million km²",
+        "area": "5.01 million\nkm²",
         "share": "58.9% of Brazil's territory",
         "scale": "500 km",
         "source": (
@@ -130,8 +130,8 @@ def add_scale_bar(ax: plt.Axes, label: str) -> None:
 
 def render(language: str, states: gpd.GeoDataFrame, amazon: gpd.GeoDataFrame) -> None:
     copy = TEXT[language]
-    fig = plt.figure(figsize=(13.33, 7.5), facecolor=COLORS["paper"])
-    ax = fig.add_axes((0.045, 0.12, 0.62, 0.70), facecolor=COLORS["paper"])
+    fig = plt.figure(figsize=(7.5, 7.5), facecolor=COLORS["paper"])
+    ax = fig.add_axes((0.055, 0.16, 0.65, 0.60), facecolor=COLORS["paper"])
 
     states.plot(
         ax=ax, facecolor=COLORS["land"], edgecolor=COLORS["state_line"],
@@ -153,17 +153,17 @@ def render(language: str, states: gpd.GeoDataFrame, amazon: gpd.GeoDataFrame) ->
     add_scale_bar(ax, copy["scale"])
 
     fig.text(
-        0.055, 0.925, copy["title"], ha="left", va="top",
-        fontsize=24, weight="bold", color=COLORS["ink"],
+        0.055, 0.945, copy["title"], ha="left", va="top",
+        fontsize=19, weight="bold", color=COLORS["ink"],
     )
     fig.text(
-        0.055, 0.855, copy["subtitle"], ha="left", va="top",
-        fontsize=11.5, color=COLORS["muted"], linespacing=1.35,
+        0.055, 0.885, copy["subtitle"], ha="left", va="top",
+        fontsize=9.2, color=COLORS["muted"], linespacing=1.35, wrap=True,
     )
 
-    fig.text(0.705, 0.66, copy["area"], fontsize=21, weight="bold", color=COLORS["amazon"])
-    fig.text(0.705, 0.605, copy["share"], fontsize=12, color=COLORS["ink"])
-    fig.add_artist(Line2D([0.705, 0.92], [0.57, 0.57], transform=fig.transFigure,
+    fig.text(0.715, 0.64, copy["area"], fontsize=16, weight="bold", color=COLORS["amazon"], linespacing=1.05)
+    fig.text(0.715, 0.555, copy["share"], fontsize=9, color=COLORS["ink"], wrap=True)
+    fig.add_artist(Line2D([0.715, 0.95], [0.515, 0.515], transform=fig.transFigure,
                           color="#C9C6BE", linewidth=0.8))
 
     legend_handles = [
@@ -172,13 +172,13 @@ def render(language: str, states: gpd.GeoDataFrame, amazon: gpd.GeoDataFrame) ->
     ]
     fig.legend(
         legend_handles, [copy["label"], copy["context"]], loc="upper left",
-        bbox_to_anchor=(0.698, 0.53), frameon=False, fontsize=10,
+        bbox_to_anchor=(0.705, 0.49), frameon=False, fontsize=8.5,
         handlelength=1.2, handleheight=1.2, labelspacing=0.9,
     )
 
     fig.text(
         0.055, 0.035, copy["source"], ha="left", va="bottom",
-        fontsize=8, color=COLORS["muted"],
+        fontsize=6.5, color=COLORS["muted"], wrap=True,
     )
 
     OUTPUT.mkdir(parents=True, exist_ok=True)

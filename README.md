@@ -14,7 +14,7 @@ make map
 ```
 
 Outputs are written to `outputs/` as PNG (300 dpi), PDF and SVG. All figures use
-a 13.33 x 7.5 inch landscape canvas (16:9).
+a square 7.5 x 7.5 inch canvas.
 
 ## Sources
 
@@ -23,4 +23,3 @@ a 13.33 x 7.5 inch landscape canvas (16:9).
 
 The script downloads the raw source archives directly from IBGE and stores them
 under `data/raw/`, which is excluded from version control.
-
