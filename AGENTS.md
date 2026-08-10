@@ -56,6 +56,21 @@ Cada figura deve equilibrar beleza, clareza e rigor cientifico. Elementos
 decorativos que nao contribuam para a leitura ou para o argumento devem ser
 evitados.
 
+## Inset map obrigatorio
+
+Todo mapa deve incluir um inset de localizacao em estilo globo, usando projecao
+ortografica e destacando o Brasil. O inset deve ser discreto, editorialmente
+integrado ao layout e suficientemente legivel no tamanho final de publicacao.
+
+Usar a geometria oficial do IBGE para representar e destacar o Brasil. O globo
+pode usar uma base mundial publica apenas como contexto, sempre com fonte e
+licenca documentadas. O inset deve conter grade geografica sutil, contraste
+acessivel e rotulo em `pt-BR` ou `en-US`, conforme a versao do mapa.
+
+O inset nao deve encobrir dados, legenda, escala, notas ou outros elementos
+essenciais. Sua posicao pode variar para se adaptar ao conteudo, mas ele nao
+pode ser omitido.
+
 ## Tecnologia principal
 
 Todos os mapas devem ser produzidos de forma reproduzivel em Python. Priorizar

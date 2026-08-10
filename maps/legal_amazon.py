@@ -16,7 +16,8 @@ from zipfile import ZipFile
 import geopandas as gpd
 import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
-from matplotlib.patches import Rectangle
+from matplotlib.patches import Circle, Rectangle
+from pyproj import Transformer
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -57,6 +58,7 @@ TEXT = {
         "area": "5,01 milhões\nde km²",
         "share": "58,9% do território nacional",
         "scale": "500 km",
+        "inset": "Brasil no mundo",
         "source": (
             "Fonte: IBGE, Limites da Amazônia Legal e Malha Municipal Digital, "
             "edições 2024. CRS: SIRGAS 2000 / Brazil Polyconic."
@@ -73,6 +75,7 @@ TEXT = {
         "area": "5.01 million\nkm²",
         "share": "58.9% of Brazil's territory",
         "scale": "500 km",
+        "inset": "Brazil in the world",
         "source": (
             "Source: IBGE, Legal Amazon Boundaries and Digital Municipal Mesh, "
             "2024 editions. CRS: SIRGAS 2000 / Brazil Polyconic."
@@ -88,6 +91,9 @@ COLORS = {
     "amazon_edge": "#11574D",
     "ink": "#222222",
     "muted": "#6E6D68",
+    "ocean": "#DDE8E6",
+    "globe_line": "#A9BEBA",
+    "locator": "#D67C42",
 }
 
 
@@ -128,7 +134,63 @@ def add_scale_bar(ax: plt.Axes, label: str) -> None:
     )
 
 
-def render(language: str, states: gpd.GeoDataFrame, amazon: gpd.GeoDataFrame) -> None:
+def add_globe_inset(fig: plt.Figure, states_wgs84: gpd.GeoDataFrame, label: str) -> None:
+    """Add an orthographic locator globe centered on Brazil."""
+    globe = fig.add_axes((0.765, 0.205, 0.17, 0.17), facecolor="none")
+    radius = 6_371_000
+    boundary = Circle(
+        (0, 0), radius, facecolor=COLORS["ocean"],
+        edgecolor=COLORS["ink"], linewidth=0.8, zorder=0,
+    )
+    globe.add_patch(boundary)
+
+    transformer = Transformer.from_crs(
+        "EPSG:4674", "+proj=ortho +lat_0=-15 +lon_0=-55 +ellps=GRS80 +units=m",
+        always_xy=True,
+    )
+
+    def plot_graticule(lons: list[float], lats: list[float]) -> None:
+        xs, ys = transformer.transform(lons, lats)
+        segment_x: list[float] = []
+        segment_y: list[float] = []
+        for x, y in zip(xs, ys, strict=True):
+            if abs(x) <= radius and abs(y) <= radius:
+                segment_x.append(x)
+                segment_y.append(y)
+            elif segment_x:
+                globe.plot(segment_x, segment_y, color=COLORS["globe_line"], linewidth=0.35, zorder=1)
+                segment_x, segment_y = [], []
+        if segment_x:
+            globe.plot(segment_x, segment_y, color=COLORS["globe_line"], linewidth=0.35, zorder=1)
+
+    samples = list(range(-180, 181, 2))
+    for latitude in (-60, -30, 0, 30, 60):
+        plot_graticule(samples, [latitude] * len(samples))
+    lat_samples = list(range(-89, 90, 2))
+    for longitude in range(-180, 180, 30):
+        plot_graticule([longitude] * len(lat_samples), lat_samples)
+
+    brazil = states_wgs84.dissolve().to_crs(
+        "+proj=ortho +lat_0=-15 +lon_0=-55 +ellps=GRS80 +units=m"
+    )
+    brazil.plot(
+        ax=globe, facecolor=COLORS["locator"], edgecolor=COLORS["ink"],
+        linewidth=0.45, zorder=3,
+    )
+    globe.set_xlim(-radius * 1.04, radius * 1.04)
+    globe.set_ylim(-radius * 1.04, radius * 1.04)
+    globe.set_aspect("equal")
+    globe.set_axis_off()
+    globe.text(
+        0.5, -0.08, label, transform=globe.transAxes, ha="center", va="top",
+        fontsize=6.8, color=COLORS["muted"],
+    )
+def render(
+    language: str,
+    states: gpd.GeoDataFrame,
+    amazon: gpd.GeoDataFrame,
+    states_wgs84: gpd.GeoDataFrame,
+) -> None:
     copy = TEXT[language]
     fig = plt.figure(figsize=(7.5, 7.5), facecolor=COLORS["paper"])
     ax = fig.add_axes((0.055, 0.16, 0.65, 0.60), facecolor=COLORS["paper"])
@@ -151,6 +213,7 @@ def render(language: str, states: gpd.GeoDataFrame, amazon: gpd.GeoDataFrame) ->
     ax.set_axis_off()
     ax.set_aspect("equal")
     add_scale_bar(ax, copy["scale"])
+    add_globe_inset(fig, states_wgs84, copy["inset"])
 
     fig.text(
         0.055, 0.945, copy["title"], ha="left", va="top",
@@ -190,10 +253,11 @@ def render(language: str, states: gpd.GeoDataFrame, amazon: gpd.GeoDataFrame) ->
 
 
 def main() -> None:
-    states = gpd.read_file(ensure_source(SOURCES["states"])).to_crs(CRS_MAP)
+    states_wgs84 = gpd.read_file(ensure_source(SOURCES["states"]))
+    states = states_wgs84.to_crs(CRS_MAP)
     amazon = gpd.read_file(ensure_source(SOURCES["legal_amazon"])).to_crs(CRS_MAP)
     for language in TEXT:
-        render(language, states, amazon)
+        render(language, states, amazon, states_wgs84)
         print(f"Generated {language}")
 
 
