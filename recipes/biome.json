@@ -1,0 +1,18 @@
+{
+  "schema_version": "1.0", "recipe_version": "0.1.0", "slug": "biome", "maturity": "experimental", "kind": "thematic",
+  "title": {"pt-BR": "Mapa de bioma brasileiro", "en-US": "Brazilian biome map"},
+  "description": {"pt-BR": "Destaca um bioma oficial no contexto do Brasil.", "en-US": "Highlights an official biome within Brazil."},
+  "purpose": {"pt-BR": "Comunicar extensão e contexto territorial do bioma.", "en-US": "Communicate the biome's extent and territorial context."},
+  "question": {"pt-BR": "Onde está o bioma e qual território ele abrange?", "en-US": "Where is the biome and what territory does it cover?"},
+  "layout": {"grammar": "context-focus-evidence", "modules": ["title", "subtitle", "map", "legend", "annotations", "globe", "notes", "sources"]},
+  "required_fields": [
+    {"name": "biome_name", "type": "string", "description": {"pt-BR": "Nome oficial do bioma.", "en-US": "Official biome name."}},
+    {"name": "biome_geometry", "type": "geometry", "description": {"pt-BR": "Limite do bioma com edição fixa.", "en-US": "Biome boundary from a fixed edition."}}
+  ],
+  "source": {"preferred": {"pt-BR": "IBGE, Biomas e Sistema Costeiro-Marinho.", "en-US": "IBGE, Biomes and Coastal-Marine System."}, "provenance_required": true},
+  "crs": {"selection_rule": {"pt-BR": "Usar projeção equivalente apropriada à extensão.", "en-US": "Use an equal-area projection appropriate to the extent."}, "declare_output_crs": true},
+  "method": {"summary": {"pt-BR": "Selecionar o bioma por identificador oficial e validar sua geometria.", "en-US": "Select the biome by official identifier and validate its geometry."}, "qa": ["edition_locked", "geometry_valid", "area_checked"]},
+  "privacy": {"risk": {"pt-BR": "Baixo: dados territoriais agregados.", "en-US": "Low: aggregated territorial data."}, "controls": ["no_personal_data"]},
+  "classification": {"strategy": {"pt-BR": "Destaque binário do bioma e contexto neutro.", "en-US": "Binary biome highlight with neutral context."}, "legend_required": true},
+  "human_review_required": false
+}

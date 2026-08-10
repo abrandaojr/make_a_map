@@ -1,0 +1,12 @@
+{
+  "schema_version": "1.0", "recipe_version": "0.1.0", "slug": "neighborhood", "maturity": "concept", "kind": "locator",
+  "title": {"pt-BR": "Mapa de bairro", "en-US": "Neighborhood map"}, "description": {"pt-BR": "Mostra um bairro em contexto urbano com limites documentados.", "en-US": "Shows a neighborhood in urban context using documented boundaries."},
+  "purpose": {"pt-BR": "Localizar uma área intraurbana sem sugerir precisão inexistente.", "en-US": "Locate an intra-urban area without implying false precision."}, "question": {"pt-BR": "Onde fica o bairro e quais referências o situam?", "en-US": "Where is the neighborhood and which landmarks situate it?"},
+  "layout": {"grammar": "local-detail-with-context", "modules": ["title", "subtitle", "map", "legend", "annotations", "scale", "north_arrow", "globe", "notes", "sources"]},
+  "required_fields": [{"name": "neighborhood_name", "type": "string", "description": {"pt-BR": "Nome oficial ou nome adotado, com autoridade indicada.", "en-US": "Official or adopted name, with authority identified."}}, {"name": "neighborhood_geometry", "type": "geometry", "description": {"pt-BR": "Limite intraurbano com fonte e vigência.", "en-US": "Intra-urban boundary with source and effective date."}}],
+  "source": {"preferred": {"pt-BR": "Prefeitura ou órgão público local; IBGE para contexto.", "en-US": "Municipal or local public authority; IBGE for context."}, "provenance_required": true},
+  "crs": {"selection_rule": {"pt-BR": "Usar CRS métrico local compatível com a fonte.", "en-US": "Use a local metric CRS compatible with the source."}, "declare_output_crs": true},
+  "method": {"summary": {"pt-BR": "Verificar autoridade, vigência e incerteza do limite.", "en-US": "Verify boundary authority, effective date, and uncertainty."}, "qa": ["authority_checked", "date_checked", "uncertainty_disclosed"]},
+  "privacy": {"risk": {"pt-BR": "Moderado quando dados pontuais forem combinados.", "en-US": "Moderate when combined with point-level data."}, "controls": ["aggregate_small_counts", "remove_personal_data"]},
+  "classification": {"strategy": {"pt-BR": "Área focal e referências urbanas seletivas.", "en-US": "Focal area with selective urban landmarks."}, "legend_required": true}, "human_review_required": false
+}

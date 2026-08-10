@@ -1,0 +1,38 @@
+[build-system]
+requires = ["hatchling>=1.27"]
+build-backend = "hatchling.build"
+
+[project]
+name = "make-a-map"
+version = "0.1.0"
+description = "Reproducible bilingual editorial cartography for Brazil"
+readme = "README.md"
+requires-python = ">=3.11,<3.15"
+license = {text = "MIT"}
+dependencies = [
+  "geopandas>=1.0,<2",
+  "matplotlib>=3.9,<4",
+  "numpy>=2.0,<3",
+  "pillow>=11,<13",
+  "pyogrio>=0.10,<1",
+  "pyproj>=3.7,<4",
+  "shapely>=2.0,<3",
+]
+
+[project.scripts]
+make-a-map = "make_a_map.cli:main"
+
+[project.optional-dependencies]
+raster = ["rasterio>=1.4,<2", "rioxarray>=0.18,<1"]
+classification = ["mapclassify>=2.8,<3"]
+dev = ["pytest>=8,<10", "ruff>=0.9,<1"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/make_a_map"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100

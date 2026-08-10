@@ -9,3 +9,5 @@ data/raw/
 # Keep lightweight previews in Git; regenerate publication formats locally.
 outputs/*.pdf
 outputs/*.svg
+outputs/**/*.pdf
+outputs/**/*.svg
