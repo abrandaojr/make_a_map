@@ -1,53 +1,46 @@
-"""Stable command-line surface for authors and reviewers."""
+"""Command-line interface for the final map collection."""
 
 from __future__ import annotations
 
 import argparse
-import json
 import sys
 from pathlib import Path
 
-from .maps.legal_amazon import build as build_legal_amazon
-from .recipes import list_recipes, scaffold_recipe
+from .maps.biome_variations import build_biome_variations
+from .maps.requested_series import build_requested_series
+from .qgis_projects import build_qgis_projects
 
 
 def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        prog="make-a-map", description="Bilingual editorial cartography for Brazil"
+        prog="make-a-map", description="Build the final bilingual Brazil map collection"
     )
-    sub = parser.add_subparsers(dest="command", required=True)
-    sub.add_parser("templates", help="list versioned map recipes")
-    new = sub.add_parser("new", help="scaffold a map project from a recipe")
-    new.add_argument("slug")
-    new.add_argument("--template", required=True)
-    new.add_argument("--directory", type=Path, default=Path("map-projects"))
-    build = sub.add_parser("build", help="build a governed bilingual map")
-    build.add_argument("map", choices=("legal-amazon",))
-    build.add_argument("--offline", action="store_true")
-    build.add_argument("--mode", choices=("editorial", "scientific"), default="editorial")
-    build.add_argument("--output", type=Path, default=Path("outputs"))
-    sub.add_parser("doctor", help="check runtime dependencies and recipe catalog")
+    commands = parser.add_subparsers(dest="command", required=True)
+    for command, help_text in (
+        ("build", "build the six final bilingual maps"),
+        ("qgis", "build the six portable QGIS projects"),
+    ):
+        item = commands.add_parser(command, help=help_text)
+        item.add_argument("--offline", action="store_true")
+        item.add_argument("--output", type=Path, default=Path("outputs"))
+    variations = commands.add_parser(
+        "variations", help="build ten bilingual Amazon and Cerrado visual studies"
+    )
+    variations.add_argument("--output", type=Path, default=Path("outputs"))
+    commands.add_parser("doctor", help="check runtime dependencies and final catalogs")
     return parser
 
 
 def main(argv: list[str] | None = None) -> int:
     args = _parser().parse_args(argv)
-    if args.command == "templates":
-        for recipe in list_recipes():
-            print(f"{recipe.slug:34} {recipe.maturity:12} {recipe.kind}")
-        return 0
-    if args.command == "new":
-        project_dir = args.directory / args.slug
-        project_dir.mkdir(parents=True, exist_ok=False)
-        destination = project_dir / "map.json"
-        payload = scaffold_recipe(args.template)
-        payload["slug"] = args.slug
-        destination.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
-        print(destination)
-        return 0
     if args.command == "build":
-        destination = build_legal_amazon(args.output, offline=args.offline, mode=args.mode)
-        print(destination)
+        print(build_requested_series(args.output, offline=args.offline))
+        return 0
+    if args.command == "qgis":
+        print(build_qgis_projects(args.output, offline=args.offline))
+        return 0
+    if args.command == "variations":
+        print(build_biome_variations(args.output))
         return 0
     if args.command == "doctor":
         try:
@@ -56,14 +49,19 @@ def main(argv: list[str] | None = None) -> int:
             import pyproj
             import shapely
 
-            recipes = list_recipes()
+            from .data import load_catalog
+            from .maps.requested_series import MUNICIPALITY_GEOCODES_PATH, SERIES
+
+            sources = load_catalog()
+            if not MUNICIPALITY_GEOCODES_PATH.is_file():
+                raise FileNotFoundError(MUNICIPALITY_GEOCODES_PATH)
         except (ImportError, OSError, ValueError) as error:
             print(f"doctor failed: {error}", file=sys.stderr)
             return 2
         print(f"Python {sys.version.split()[0]}")
         print(f"GeoPandas {geopandas.__version__}; Matplotlib {matplotlib.__version__}")
         print(f"PROJ {pyproj.proj_version_str}; Shapely {shapely.__version__}")
-        print(f"Recipes: {len(recipes)}")
+        print(f"Final collection: {len(SERIES)} maps; {len(sources)} sources")
         return 0
     return 2
 

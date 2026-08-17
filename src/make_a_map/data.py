@@ -8,17 +8,19 @@ import os
 import shutil
 import stat
 import tempfile
+import zlib
 from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path, PurePosixPath
 from typing import Any
+from urllib.parse import urlparse
 from urllib.request import Request, urlopen
 from zipfile import BadZipFile, ZipFile, ZipInfo
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
-DEFAULT_CATALOG = PROJECT_ROOT / "data" / "sources.json"
-DEFAULT_RAW_ROOT = PROJECT_ROOT / "data" / "raw"
+DEFAULT_CATALOG = PROJECT_ROOT / "data" / "catalog" / "sources.json"
+DEFAULT_RAW_ROOT = PROJECT_ROOT / "data" / "cache"
 REQUIRED_SHAPEFILE_SUFFIXES = frozenset({".shp", ".shx", ".dbf", ".prj"})
 
 
@@ -46,6 +48,20 @@ class DataSource:
     license_url: str | None = None
     crs_original: str | None = None
     retrieved_on: str | None = None
+
+    def __post_init__(self) -> None:
+        if len(self.sha256) != 64 or any(character not in "0123456789abcdefABCDEF" for character in self.sha256):
+            raise ValueError(f"invalid SHA-256 for {self.id}")
+        if self.size_bytes <= 0:
+            raise ValueError(f"size_bytes must be positive for {self.id}")
+        parsed = urlparse(self.url)
+        if parsed.scheme != "https" or not parsed.hostname or parsed.username or parsed.password:
+            raise ValueError(f"source URL must be an unauthenticated HTTPS URL for {self.id}")
+        for field_name in ("archive", "dataset_dir", "primary_file"):
+            value = getattr(self, field_name)
+            path = PurePosixPath(value)
+            if path.is_absolute() or not path.parts or any(part in {"", ".", ".."} for part in path.parts):
+                raise ValueError(f"{field_name} must be a safe relative path for {self.id}")
 
     @classmethod
     def from_mapping(cls, source_id: str, value: Mapping[str, Any]) -> DataSource:
@@ -135,13 +151,14 @@ def _validate_members(zipped: ZipFile, source: DataSource) -> list[tuple[ZipInfo
     matching = [path for _, path in members if path.name == primary.name]
     if len(matching) != 1:
         raise DataIntegrityError(f"Expected exactly one {primary.name!r} in {source.id}")
-    stem = matching[0].with_suffix("")
-    suffixes = {path.suffix.lower() for _, path in members if path.with_suffix("") == stem}
-    missing = REQUIRED_SHAPEFILE_SUFFIXES - suffixes
-    if missing:
-        raise DataIntegrityError(
-            f"Incomplete shapefile for {source.id}; missing: {', '.join(sorted(missing))}"
-        )
+    if primary.suffix.lower() == ".shp":
+        stem = matching[0].with_suffix("")
+        suffixes = {path.suffix.lower() for _, path in members if path.with_suffix("") == stem}
+        missing = REQUIRED_SHAPEFILE_SUFFIXES - suffixes
+        if missing:
+            raise DataIntegrityError(
+                f"Incomplete shapefile for {source.id}; missing: {', '.join(sorted(missing))}"
+            )
     return members
 
 
@@ -172,6 +189,30 @@ def _extract_verified(archive: Path, target: Path, source: DataSource) -> Path:
                     raise DataIntegrityError(f"Extracted primary file is ambiguous for {source.id}")
                 staging.replace(target)
                 return target / primary_matches[0].relative_to(staging)
+    except BadZipFile as error:
+        raise DataIntegrityError(f"Invalid ZIP archive for {source.id}") from error
+
+
+def _crc32_file(path: Path, chunk_size: int = 1024 * 1024) -> int:
+    checksum = 0
+    with path.open("rb") as stream:
+        for chunk in iter(lambda: stream.read(chunk_size), b""):
+            checksum = zlib.crc32(chunk, checksum)
+    return checksum & 0xFFFFFFFF
+
+
+def _verify_extraction(archive: Path, target: Path, source: DataSource) -> None:
+    """Verify extracted source members against the already verified ZIP."""
+    try:
+        with ZipFile(archive) as zipped:
+            members = _validate_members(zipped, source)
+            components = [(info, relative) for info, relative in members if not info.is_dir()]
+            for info, relative in components:
+                extracted = target.joinpath(*relative.parts)
+                if not extracted.is_file() or extracted.stat().st_size != info.file_size:
+                    raise DataIntegrityError(f"Extracted member mismatch for {source.id}: {relative}")
+                if _crc32_file(extracted) != info.CRC:
+                    raise DataIntegrityError(f"Extracted member checksum mismatch for {source.id}: {relative}")
     except BadZipFile as error:
         raise DataIntegrityError(f"Invalid ZIP archive for {source.id}") from error
 
@@ -230,15 +271,12 @@ def fetch_source(
     else:
         _download_atomic(source, archive, timeout)
 
-    if primary.exists():
-        # Validate all required sidecars even for a pre-existing extraction.
-        missing = [
-            primary.with_suffix(suffix)
-            for suffix in REQUIRED_SHAPEFILE_SUFFIXES
-            if not primary.with_suffix(suffix).is_file()
-        ]
-        if missing:
-            raise DataIntegrityError(f"Incomplete cached shapefile: {', '.join(map(str, missing))}")
+    # Immutable single-file sources (for example an edition-locked OSM PBF)
+    # are consumed directly; ZIP sources retain the verified extraction path.
+    if archive.suffix.lower() == ".pbf":
+        primary = archive
+    elif primary.exists():
+        _verify_extraction(archive, target, source)
     else:
         primary = _extract_verified(archive, target, source)
 

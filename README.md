@@ -1,68 +1,81 @@
 # Make a Map
 
-Sistema Python para cartografia editorial e científica do Brasil. Cada build
-gera conjuntamente versões em português brasileiro (`pt-BR`) e inglês
-americano (`en-US`) a partir dos mesmos dados e valores semânticos.
+Make a Map builds one final collection of six bilingual maps of Brazil. Every master is
+7.5 × 7.5 inches at 300 dpi and is generated in Brazilian Portuguese (`pt-BR`) and
+American English (`en-US`) from the same prepared geometry.
 
-Status: **alpha interna**. As receitas possuem maturidade explícita; um build
-bem-sucedido não equivale a aprovação editorial ou científica.
+An additional design-study collection provides ten visual versions of the combined
+Amazon and Cerrado map. Each version is built in both languages from the same official
+IBGE geometry and typed style definition. Run `make variations` to regenerate it under
+`outputs/amazon-cerrado-variations/`.
 
-## Começo rápido
+## Final collection
+
+1. Amazon and Cerrado biomes — national overview
+2. Amazon biome
+3. Cerrado biome
+4. São Félix do Xingu
+5. Synthetic CAR property in São Félix do Xingu
+6. Synthetic purchasing zone in São Félix do Xingu
+
+All maps use the boundary-forward style selected from design study 08, with muted green
+for the Amazon, soft ochre for the Cerrado, strong thematic outlines, and subtle shaded
+relief. Conservation units and Indigenous lands retain distinct green and burnt-orange
+hues in the same restrained palette. State boundaries are always the top drawing layer.
+The CAR property and purchasing zone are synthetic and contain no owner, registry, or
+supplier identifiers.
+
+Masters are full-bleed 7.5 × 7.5-inch map canvases with no title. A bilingual 16-point
+legend at lower left identifies the subject without reserving a separate layout band.
+
+National maps label official IBGE capitals and municipal seats only when scale and
+collision spacing permit. Label priority follows the population order of the selected
+municipalities, so a larger city suppresses a nearby lower-priority label.
+All maps also label visible Brazilian federation units using official IBGE names.
+
+Local maps add an edition-locked OpenStreetMap context selectively by scale: major
+roads and rivers at municipality scale, with tertiary roads only in detail views. The
+locator globe is fixed at upper right; legends are fixed at lower left. Source records
+remain in the manifest rather than competing with the map composition.
+
+## Build
 
 ```bash
 make setup
 make doctor
-make templates
-make map
-make test
+make build OFFLINE=1
+make qgis OFFLINE=1
+make check
 ```
 
-O exemplo completo usa os limites oficiais da Amazônia Legal 2024 e a malha de
-Unidades da Federação 2024 do IBGE. Os arquivos são verificados por SHA-256 e o
-globo usa Natural Earth 5.1.2 como contexto mundial em domínio público.
+Remove `OFFLINE=1` on the first build if the verified source cache is empty.
 
-As saídas ficam em `outputs/legal-amazon/latest/`:
+`make qgis` creates the portable vector, raster, and base project files. To add the
+two approved print layouts and validate the projects with QGIS itself, run
+`make qgis-finalize qgis-validate` from a shell whose `python3` provides the native
+QGIS bindings. These bindings are distributed with QGIS and are not installed by the
+project virtual environment.
 
-- PNG, PDF e SVG em `pt-BR` e `en-US`;
-- manifesto JSON com fontes, hashes, CRS, estatísticas e estado de revisão;
-- caption e descrição acessível em ambos os idiomas.
+## Final structure
 
-O mestre tem exatamente 7,5 × 7,5 polegadas. O PNG padrão possui 2250 × 2250
-pixels a 300 dpi.
-
-## CLI
-
-```bash
-make-a-map templates
-make-a-map new meu-mapa --template municipality
-make-a-map build legal-amazon --offline
-make-a-map doctor
+```text
+data/
+  catalog/       Versioned source and municipality catalogs
+  cache/         Verified downloads; ignored by Git
+docs/             Current contributor guidance
+outputs/<map>/
+  latest/        Bilingual PNGs, captions, alt text, and manifest
+  qgis/          Portable QGIS project and GeoPackage
+src/make_a_map/  Active build code only
+tests/            Tests for active code only
 ```
 
-`--offline` exige que todos os arquivos oficiais já estejam no cache e impede
-acesso à rede.
+Each QGIS project uses relative `./layers.gpkg` paths and can be moved to another
+computer as a complete `qgis/` folder.
 
-## Galeria inicial
+Source URLs, editions, expected sizes, and SHA-256 hashes are stored in
+[`data/catalog/sources.json`](data/catalog/sources.json). The edition-locked catalog of
+5,573 Brazilian municipality geocodes is stored in
+[`data/catalog/municipalities.json`](data/catalog/municipalities.json).
 
-| Receita | Maturidade | Observação |
-|---|---|---|
-| `legal-amazon-municipalities` | experimental | vertical slice governado |
-| `biome` | experimental | bioma brasileiro selecionável |
-| `municipality` | experimental | locator por geocódigo IBGE |
-| `neighborhood` | concept | exige fonte municipal oficial |
-| `rural-property` | concept/sensitive | revisão humana e privacidade obrigatórias |
-| `slaughterhouse-purchasing-zone` | concept/sensitive | método, período e divulgação obrigatórios |
-
-Veja [o plano](docs/IMPLEMENTATION_PLAN.md), a
-[primeira revisão](docs/PEER_REVIEW.md), a
-[segunda revisão](docs/PEER_REVIEW_ROUND_2.md) e o
-[guia de contribuição](docs/CONTRIBUTING.md).
-
-## Fontes
-
-- IBGE, Limites da Amazônia Legal, edição 2024.
-- IBGE, Malha de Unidades da Federação, edição 2024.
-- Natural Earth, Admin 0 Countries 1:110m, versão 5.1.2, domínio público.
-
-Os dados brutos ficam em `data/raw/`, fora do Git. O catálogo versionado em
-`data/sources.json` mantém URLs exatas, edições, tamanhos e checksums esperados.
+See [the contributor guide](docs/CONTRIBUTING.md) for the final review checklist.

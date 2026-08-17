@@ -5,10 +5,7 @@ __pycache__/
 .DS_Store
 
 # Official source files are downloaded reproducibly by the script.
-data/raw/
+data/cache/
 
-# Keep lightweight previews in Git; regenerate publication formats locally.
-outputs/*.pdf
-outputs/*.svg
-outputs/**/*.pdf
-outputs/**/*.svg
+# Final artifacts are rebuilt from verified sources.
+outputs/

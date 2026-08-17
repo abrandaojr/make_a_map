@@ -62,6 +62,37 @@ def test_offline_fetch_verifies_and_extracts_complete_shapefile(tmp_path: Path) 
     assert provenance.crs_original == "EPSG:4674"
 
 
+def test_offline_fetch_verifies_and_extracts_raster(tmp_path: Path) -> None:
+    raw = tmp_path / "raw"
+    raw.mkdir()
+    archive = raw / "fixture.zip"
+    _write_zip(archive, {"relief/terrain.tif": b"raster", "relief/terrain.tfw": b"world-file"})
+    catalog = _catalog(
+        tmp_path / "sources.json", archive, sha256_file(archive), primary="terrain.tif"
+    )
+
+    primary, provenance = fetch_source("fixture", raw_root=raw, catalog_path=catalog, offline=True)
+
+    assert primary.read_bytes() == b"raster"
+    assert provenance.sha256 == sha256_file(archive)
+
+
+def test_offline_fetch_rejects_modified_extracted_component(tmp_path: Path) -> None:
+    raw = tmp_path / "raw"
+    raw.mkdir()
+    archive = raw / "fixture.zip"
+    _write_zip(
+        archive,
+        {suffix: b"fixture" for suffix in ("shape.shp", "shape.shx", "shape.dbf", "shape.prj")},
+    )
+    catalog = _catalog(tmp_path / "sources.json", archive, sha256_file(archive))
+    primary, _ = fetch_source("fixture", raw_root=raw, catalog_path=catalog, offline=True)
+    primary.with_suffix(".dbf").write_bytes(b"tampered")
+
+    with pytest.raises(DataIntegrityError, match="Extracted member"):
+        fetch_source("fixture", raw_root=raw, catalog_path=catalog, offline=True)
+
+
 def test_offline_fetch_rejects_hash_mismatch_without_replacing_cache(tmp_path: Path) -> None:
     raw = tmp_path / "raw"
     raw.mkdir()
@@ -74,6 +105,37 @@ def test_offline_fetch_rejects_hash_mismatch_without_replacing_cache(tmp_path: P
         fetch_source("fixture", raw_root=raw, catalog_path=catalog, offline=True)
 
     assert archive.read_bytes() == original
+
+
+def test_offline_fetch_returns_verified_single_file_source(tmp_path: Path) -> None:
+    raw = tmp_path / "raw"
+    archive = raw / "fixture.pbf"
+    archive.parent.mkdir()
+    archive.write_bytes(b"edition-locked osm fixture")
+    payload = {
+        "schema_version": 1,
+        "sources": {
+            "fixture": {
+                "title": "OSM fixture",
+                "publisher": "Test fixture",
+                "edition": "1",
+                "url": "https://example.invalid/fixture.pbf",
+                "archive": archive.name,
+                "sha256": sha256_file(archive),
+                "size_bytes": archive.stat().st_size,
+                "dataset_dir": "unused",
+                "primary_file": archive.name,
+                "license": "ODbL fixture",
+            }
+        },
+    }
+    catalog = tmp_path / "sources.json"
+    catalog.write_text(json.dumps(payload), encoding="utf-8")
+
+    primary, provenance = fetch_source("fixture", raw_root=raw, catalog_path=catalog, offline=True)
+
+    assert primary == archive
+    assert provenance.data_path == str(archive)
 
 
 @pytest.mark.parametrize("unsafe_name", ["../escape.shp", "/absolute/escape.shp", "C:/escape.shp"])
