@@ -16,6 +16,7 @@ dependencies = [
   "pillow>=11,<13",
   "pyogrio>=0.10,<1",
   "pyproj>=3.7,<4",
+  "rasterio>=1.4,<2",
   "shapely>=2.0,<3",
 ]
 
@@ -23,7 +24,7 @@ dependencies = [
 make-a-map = "make_a_map.cli:main"
 
 [project.optional-dependencies]
-raster = ["rasterio>=1.4,<2", "rioxarray>=0.18,<1"]
+raster = ["rioxarray>=0.18,<1"]
 classification = ["mapclassify>=2.8,<3"]
 dev = ["pytest>=8,<10", "ruff>=0.9,<1"]
 
