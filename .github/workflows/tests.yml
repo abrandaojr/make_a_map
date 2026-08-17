@@ -22,4 +22,4 @@ jobs:
       - name: Run offline test suite
         env:
           MAKE_A_MAP_OFFLINE: "1"
-        run: make check
+        run: make check PYTHON=python
